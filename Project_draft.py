@@ -8,12 +8,17 @@ from spacy.matcher import Matcher
 from nltk.collocations import *
 from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet as wn
+#pypdf extract text from pdf file
 
-input_text = input("Paste in the text you would like to pull vocabualry from: ") #
+input_text = input("Enter text you would like to pull vocabualry from: ") #
 word_type = input("What type of word would you like to learn?(verb, adjective, adverb, noun): ")
+#add most frequent. suggest for use with larger texts only such as pdf
 source = input("Language of the input text: ") 
 #target = input("What language would you like to translate the vocabulary words into?: ") 
 amount = input("How many words would you like to have in your deck?(define with number or write 'all' to retrieve all insances): ")
+include_details = input("Would you like to include the morphological feature for each word in your deck?[y/n]: ")
+#deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards?
+
 
 def find_pos(word_type):
     if word_type.lower() == "adjective":
@@ -22,8 +27,10 @@ def find_pos(word_type):
         pos = "ADV"
     if word_type.lower() == "noun":
         pos = "NOUN"
+        #its possible to sort by word gender
     if word_type.lower() == "verb":
         pos = "VERB"
+        # matcher
     return pos
 # for verbs add pattern match to include ADP ex. get off, wait on
 # no available tag for prepositions with pos alone
@@ -58,19 +65,36 @@ nlp = define_lang(source)
 doc = nlp(input_text)
 pos = find_pos(word_type)
 wanted_words= [] # list of all words that match the desired word type
+# to do: make cards a class with named positional features
 cards= [] # random selected vocabualry words from text 
 two_sides = {} # dictionary of target language words with transations
 #print(doc)
 
+#class Card():
+#    def __init__(self,):
+
 verb_pattern_matcher = [{}]
+#for verbs it would make sense to add token.text with morphological features AND token.lemma_
+#this would reduce the need to include several tables in different tenses, but gives the user more context
+#there is no good data set for conjugating verbs especially in non-english or ambiguous tokens
+
+def get_mor_lem(token): # gathers then returns token lemma and token with features the way it appeared in source text
+    tex = token.text
+    mor = token.morph
+    lem = token.lemma_
+    mor_lem = (lem, tex, mor)
+    return(mor_lem)
 
 for token in doc:
     #print(token.pos_)
     if token.pos_ == pos:
         if token.lemma_ not in wanted_words:
-            #if pos == "VERB":
-            #else:
-            wanted_words.append(token.lemma_)
+            if include_details == "y":
+                wanted_words.append(get_mor_lem(token))
+            #match
+            # wanted_words.append(match)
+            else:
+                wanted_words.append(token.lemma_)
 
 count = len(wanted_words)
 if str(amount).lower() == "all":
@@ -87,7 +111,7 @@ elif int(amount) >= len(wanted_words):
 else:
     cards.append(sample(wanted_words, int(amount)))
 
-print(wanted_words)
+#print(wanted_words)
 print(cards)
 
 """for c in cards:
