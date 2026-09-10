@@ -87,7 +87,7 @@ word_model = genanki.Model(
      #Target = target language
     templates=[
         {
-            "name": "Card 1",
+            "name": "Card 1",       #a lot of inspiration from kerrickstaley's genanki python model
             "qfmt": "{{English}}", #front
             "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><small>{{Morphology}}</small>', #back, hr id="answer" draws horizontal line, Target inserts translation, br is a line break
         },
