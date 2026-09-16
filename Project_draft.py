@@ -1,34 +1,46 @@
-import nltk
+import nltk, pprint, random, spacy, asyncio
 #import stanza
-import random
 from random import sample
-import spacy
 from spacy.matcher import Matcher
 from nltk.tokenize import word_tokenize
 from googletrans import Translator
-import asyncio
+from pypdf import PdfReader
+from pathlib import Path
+
 #pypdf extract text from pdf file
 # reference: the front of the card: token lemma
 # back: translation
 # expandable bar at the bottom of the screen: word in sentence as it appears in the source text with morphological features if desired 
-    
-input_text = input("Enter text you would like to pull vocabualry from: ") #
-if input_text == "":
+
+textfile_on = input("Would you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
+if textfile_on == "":
     quit()
-word_type = input("What type of word would you like to learn?(verb, adjective, adverb, noun): ")
+elif textfile_on:
+    user_input = input("Please input the filepath of the text from which to extract the vocabulary:\n") 
+    if user_input == "":
+        quit()
+    elif not Path(user_input).suffix.lower() == ".txt" and not Path(user_input).suffix.lower() == ".pdf":
+        raise ValueError("file format is not supported")
+
+else:
+    input_text = input("Enter text you would like to pull vocabualry from:\n") #raw string input from user
+    if input_text == "":
+        quit()
+
+word_type = input("What type of word would you like to learn?(verb, adjective, adverb, noun):\n")
 if word_type == "":
     quit()
 #add most frequent. suggest for use with larger texts only such as pdf
-source = input("Language of the input text: ") 
+source = input("Language of the input text:\n") 
 if source == "":
     quit()
-target = input("What language would you like to translate the vocabulary words into?: ")
+target = input("What language would you like to translate the vocabulary words into?:\n")
 if target == "":
     quit()
-amount = input("How many words would you like to learn?(define with number or write 'all' to retrieve all insances): ")
+amount = input("How many words would you like to learn?(define with number or write 'all' to retrieve all insances):\n")
 if amount == "":
     quit()
-include_details = input("Would you like to include the morphological features for each word in your deck?[y/n]: ")
+include_details = input("Would you like to include the morphological features for each word in your deck?[y/n]:\n")
 if include_details == "":
     quit()
 #make_deck = input("Do you want to make a flashcard deck")
@@ -67,24 +79,20 @@ def define_lang(source):
     if str(source).lower() == "french":
         source_lang = spacy.load("fr_core_news_sm")
         return source_lang
+    if str(source).lower() == "italian":
+        source_lang = spacy.load("it_core_news_sm")
+        return source_lang
     #if str(source).lower() == "chinese":
      #   source_lang = spacy.load("zh_core_web_sm")
       #  return source_lang
     else:
-        return("Language not supported")
+        raise ValueError("Language not supported")
 
 # Load the pre-trained model
 nlp = define_lang(source)
 #tnlp = define_lang(target) # for translation (back of flashcard)
 
-# Process the sentence
-doc = nlp(input_text)
-pos = find_pos(word_type)
-wanted_words= [] # list of all words that match the desired word type
-vocab_list= [] # random selected vocabualry words from text 
-cards = {} # dict of card with lemma as key, sentence where word appears in source text plus additional features as value list 
-# key = lemma_ . value = [translation, text, morph, sentance] 
-# value.append
+
 
 """def find_patterns(file_text): # slides 7-1 spacy
     matcher = Matcher(nlp.vocab)
@@ -110,10 +118,37 @@ def get_tex_mor(token): # gathers then returns token lemma and token with featur
     mor = token.morph
     tex_mor = (tex, mor)
     return(tex_mor)
+    #return((token.text, token.morph))
 
 def pull_sentence(token):
     [sentence + '.' for sentence in source.split('.') if token in sentence] # stackoverflow Python how to extract sentence containing a word
 
+# Process the sentence
+if textfile_on:   
+    file_path = Path(user_input)
+    if file_path.suffix.lower() == ".txt": #use pathlib (previously regex) to check file format. supported file formats are currently: txt, pdf
+        with open(file_path, "r") as file:
+            doc = nlp(file.read())
+    elif file_path.suffix.lower() == ".pdf": #use pypdf to open pdf files and extract text
+        reader = PdfReader(file_path)
+        #number_of_pages = len(reader.pages)
+        
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        #text = page.extract_text()
+        doc = nlp(text)
+    else:
+        raise ValueError("file format is not supported")
+else:
+    doc = nlp(input_text)# raw input text
+
+pos = find_pos(word_type)
+wanted_words= [] # list of all words that match the desired word type
+vocab_list= [] # random selected vocabualry words from text 
+cards = {} # dict of card with lemma as key, sentence where word appears in source text plus additional features as value list 
+# key = lemma_ . value = [translation, text, morph, sentance] 
+# value.append
 
 for token in doc:
     #print(token.pos_) 
@@ -121,10 +156,10 @@ for token in doc:
             if token.lemma_ not in wanted_words:
                 traslation = ... # add translation function here
                 if include_details.lower() == "y":
-                    card = (token.lemma_, translation, get_tex_mor)
+                    card = (token.lemma_, get_tex_mor(token))#(token.lemma_, translation, get_tex_mor)
                     wanted_words.append(card)
                 else:
-                    card = (token.lemma_, translation)
+                    card = (token.lemma_)#, translation)
                     wanted_words.append(card)
 
 #for word in len(range(sample(wanted_words, int(amount)))):
@@ -150,6 +185,6 @@ elif int(amount) >= len(wanted_words):
 else:
     vocab_list.append(sample(wanted_words, int(amount)))
 
-print(vocab_list)
+pprint.pprint(vocab_list) 
 #print(cards)
 
