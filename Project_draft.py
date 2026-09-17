@@ -61,8 +61,29 @@ def find_pos(word_type):
     return pos
 # for verbs add pattern match to include ADP ex. get off, wait on
 # no available tag for prepositions with pos alone
-# other option: all word_types matchers include detailed tags for chunking / check dependancies
-def define_lang(source):
+
+def define_lang(l):
+    if str(l).lower() == "english":
+        l = "en"
+        return l
+    if str(l).lower() == "german":
+        l = "en"
+        return l
+    if str(l).lower() == "russian":
+        l = "ru"
+        return l
+    if str(l).lower() == "ukrainian":
+        l = "uk"
+        return l
+    if str(l).lower() == "french":
+        l = "fr"
+        return l
+    #if str(l).lower() == "chinese":
+      #  return l
+    else:
+        return("Language not supported")
+    
+def load_lang(source):
     #print(source)
     if str(source).lower() == "english":
         source_lang = spacy.load("en_core_web_sm")
@@ -92,26 +113,8 @@ def define_lang(source):
 nlp = define_lang(source)
 #tnlp = define_lang(target) # for translation (back of flashcard)
 
-
-
-"""def find_patterns(file_text): # slides 7-1 spacy
-    matcher = Matcher(nlp.vocab)
-
-    pattern1= [{"POS": "VERB", "OP": "?"},
-               {"POS": "ADV", "OP": "*"},
-               {"POS": "VERB", "OP": "+"}]
-   
-    matcher.add("PAT1", [pattern1])
-    matches = matcher(doc)
-
-    for match_id, start, end in matches:
-        string_id = nlp.vocab.strings[match_id]  # Get string representation
-        span = file_doc[start:end]  # The matched span
-        print(type(match_id), string_id, start, end, span.text)"""
-#verb_pattern_matcher = [{}]
-#for verbs it would make sense to add token.text with morphological features AND token.lemma_
-#this would reduce the need to include several tables in different tenses, but gives the user more context
-#there is no good data set for conjugating verbs especially in non-english or ambiguous tokens
+source = define_lang(source)
+target = define_lang(target) # for translation (back of flashcard)
 
 def get_tex_mor(token): # gathers then returns token lemma and token with features the way it appeared in source text
     tex = token.text
@@ -122,6 +125,16 @@ def get_tex_mor(token): # gathers then returns token lemma and token with featur
 
 def pull_sentence(token):
     [sentence + '.' for sentence in source.split('.') if token in sentence] # stackoverflow Python how to extract sentence containing a word
+
+#lt = LibreTranslateAPI("https://translate.terraprint.co/")
+#lt.translate(token.lemma_, source, target)
+
+lemmas = []
+words = []
+
+def translated_text(words):
+    trans = GoogleTranslator(source= source, target= target).translate_batch(words)
+    return trans
 
 # Process the sentence
 if textfile_on:   
@@ -154,16 +167,12 @@ for token in doc:
     #print(token.pos_) 
         if token.pos_ == pos:
             if token.lemma_ not in wanted_words:
-                traslation = ... # add translation function here
                 if include_details.lower() == "y":
                     card = (token.lemma_, get_tex_mor(token))#(token.lemma_, translation, get_tex_mor)
                     wanted_words.append(card)
                 else:
                     card = (token.lemma_)#, translation)
                     wanted_words.append(card)
-
-#for word in len(range(sample(wanted_words, int(amount)))):
-#    wanted_words.append(Card(word))
 
 count = len(wanted_words)
 
@@ -184,6 +193,9 @@ elif int(amount) >= len(wanted_words):
     vocab_list.append(sample(wanted_words, int(amount)))
 else:
     vocab_list.append(sample(wanted_words, int(amount)))
+
+
+#batch translate (vocab_list)
 
 pprint.pprint(vocab_list) 
 #print(cards)
