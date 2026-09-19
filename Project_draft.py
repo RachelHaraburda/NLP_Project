@@ -6,6 +6,9 @@ from nltk.tokenize import word_tokenize
 from googletrans import Translator
 from pypdf import PdfReader
 from pathlib import Path
+from translator import deepl_vocab_translation
+
+auth = input("Please provide a DeepL API key\n")
 
 textfile_on = input("Would you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
 if textfile_on == "":
@@ -54,7 +57,7 @@ def find_pos(word_type):
         #matcher
     return pos
 
-def define_lang(l):
+def define_lang(l):# doesnt work with the translator
     if str(l).lower() == "english":
         l = "en"
         return l
@@ -69,6 +72,9 @@ def define_lang(l):
         return l
     if str(l).lower() == "french":
         l = "fr"
+        return l
+    if str(l).lower() == "italian":
+        l = "it"
         return l
     else:
         return("Language not supported")
@@ -99,8 +105,9 @@ def load_lang(source):
 # Load the pre-trained model
 nlp = load_lang(source)
 #convert to language acronym for translation
-source = define_lang(source)
-target = define_lang(target)
+
+#source = define_lang(source)
+#target = define_lang(target)
 
 def get_tex_mor(token): # gathers then returns token lemma and token with features the way it appeared in source text
     return([token.text, token.morph])
@@ -137,11 +144,11 @@ cards = {} # dict of card with lemma as key, sentence where word appears in sour
 for token in doc:
     #print(token.pos_) 
         if token.pos_ == pos:
-            if token.lemma_ not in wanted_words:
+            if token.text not in wanted_words:
                 if include_details.lower() == "y":
-                    wanted_words.append([token.lemma_, get_tex_mor(token)])
+                    wanted_words.append([token.text, get_tex_mor(token)])
                 else:
-                    wanted_words.append([token.lemma_])
+                    wanted_words.append([token.text])
 
 count = len(wanted_words)
 
@@ -170,10 +177,12 @@ vocab = [item[0] for item in vocab_list] # sort out lemmas for translation
 pprint.pprint(vocab_list)
 print(vocab)
 
-translated = []
+print(deepl_vocab_translation(auth, vocab, source, target))
+
+"""translated = []
 translator = Translator()
 for item in vocab:
     trans = translator.translate(item, src= source, dest= target)
     translated.append(trans.text)
-print(translated)
+print(translated)"""
 #print(cards)
