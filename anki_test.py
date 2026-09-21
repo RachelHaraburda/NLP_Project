@@ -51,14 +51,13 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_seen_fronts(): 
     if os.path.exists(SEEN_FILE): 
-        with open(SEEN_FILE, "r", encoding="utf-8") as f:   #utf because of german letters like ä, ö, ü
-            return set(json.load(f))
+        with open(SEEN_FILE, "r", encoding="utf-8") as f:   #utf makes non latin characters like ä or 私 read correctly
     return set()  
 
 
 def save_seen_fronts(seen): 
     with open(SEEN_FILE, "w", encoding="utf-8") as f: 
-        json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False makes characters like ä readable
+        json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False keeps characters like ä or 私 as they are
 
 
 word_model = genanki.Model(
@@ -69,12 +68,12 @@ word_model = genanki.Model(
         {
             "name": "Card 1",
             "qfmt": "{{English}}", 
-            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', #back, hr id="answer" draws horizontal line(starts a new line), Target inserts translation, br is a line break. 
-        },                                                  #details creates an open collapsible container just like a folder for "show morphology". summary defines a clickable label Show morphology is clickable in Anki. small morphology displays morphological features in smaller font. details closes collapsible container
+            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
+        },                                                  
         {
             "name": "Card 2", #reverse
             "qfmt": "{{Target}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', #small so morphology is written smaller, hidden behind toggle
+            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', 
         },
     ],
 )
