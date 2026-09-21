@@ -13,7 +13,7 @@ textfile_on = input("Would you like to use a filepath (y/n)?:\n").lower() == "y"
 if textfile_on == "":
     quit()
 elif textfile_on:
-    user_input = input("Please input the filepath of the text from which to extract the vocabulary:\n") 
+    user_input = input("Please input the filepath of the text from which to extract vocabulary:\n") 
     if user_input == "":
         quit()
     elif not Path(user_input).suffix.lower() == ".txt" and not Path(user_input).suffix.lower() == ".pdf":
@@ -149,10 +149,114 @@ else:
     for word in sample(wanted_words, int(amount)):
         vocab_list.append(word)
 
-vocab = [item[0] for item in vocab_list] # sort out lemmas for translation
+#pull token.text for translation
+vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
 
 pprint.pprint(vocab_list)
-print(vocab)
-#print(deepl_vocab_translation(auth, vocab, source, target))
-#print(cards)
 
+print('[{}]'.format(', '.join(vocab)))
+#test for inserting translations and converting to cards dictionary
+"""translations = input("translated tokens here:\n")
+translations = list([x.strip() for x in translations.split(',')])
+print(translations)
+i = 0
+for item in vocab_list:
+    item.insert(1, translations[i])
+    i += 1
+#print(vocab_list)
+
+for item in vocab_list:
+    cards.update({item[0] : item[1:]})
+
+#print(deepl_vocab_translation(auth, vocab, source, target))
+print(cards)"""
+
+"""
+#Build decks
+seen_fronts = load_seen_fronts() 
+total_added = 0  
+total_skipped = 0 
+
+new_word_count = 0 
+for deck_name, data in cards.items():    
+    for english in data: 
+        if f"{deck_name}|{english}" not in seen_fronts:   
+            new_word_count += 1
+
+if new_word_count == 0: 
+    print("No new words found. Everything has already been exported.")
+    raise SystemExit  #stops the script from running further
+
+answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower()
+if answer not in ("y", "yes"):  
+    print("Cancelled. Nothing was added or exported.")
+    raise SystemExit
+
+for deck_name, data in cards.items(): 
+    deck = genanki.Deck( #creates a new(same) deck, every time the script runs
+        random.randrange(1 << 30, 1 << 31),
+        f"{deck_name} Vocabulary"
+    )
+
+    added_count = 0 
+    skipped_count = 0 
+
+    # Verbs
+    if pos == "VERB":
+        for english, (target, example) in data.get.items():
+            key = f"{deck_name}|{english}"
+            if key in seen_fronts:
+                    print(f"[{deck_name}] Skipped (duplicate): {english}")
+                    skipped_count += 1
+                    continue
+            morphology = describe_morphology(target, deck_name)
+            note = genanki.Note(model=verb_model, fields=[english, target, example, morphology])
+            deck.add_note(note)
+            seen_fronts.add(key)
+            added_count += 1
+            print(f"[{deck_name}] Added [verb]: {english} -> {target} | {morphology}")
+
+    # Nouns
+    if pos == "NOUN":
+        for english, target in data.get.items():
+            if key in seen_fronts:
+                print(f"[{deck_name}] Skipped (duplicate): {english}")
+                skipped_count += 1
+                continue
+            article = get_article(target, deck_name) #auto-detected instead of read from the dictionary
+            morphology = describe_morphology(target, deck_name)
+            note = genanki.Note(model=noun_model, fields=[english, article, target, morphology])
+            deck.add_note(note)
+            seen_fronts.add(key)
+            added_count += 1
+            print(f"[{deck_name}] Added [noun]: {english} -> {article} {target} | {morphology}")
+    # Words
+    else:
+        for english, target in data.get.items():
+            key = f"{deck_name}|{english}"
+            if key in seen_fronts: 
+                print(f"[{deck_name}] Skipped (duplicate): {english}") 
+                skipped_count += 1
+                continue 
+            morphology = describe_morphology(target, deck_name) #generate mophology for the back of the flashcard
+            note = genanki.Note(model=word_model, fields=[english, target, morphology]) #builds flashcard data
+            deck.add_note(note) 
+            seen_fronts.add(key) #prevents duplicates next time
+            added_count += 1
+            print(f"[{deck_name}] Added [word]: {english} -> {target} | {morphology}") 
+
+    if added_count > 0: 
+        output_path = os.path.join(OUTPUT_DIR, f"{deck_name.lower()}_vocab.apkg") 
+        genanki.Package(deck).write_to_file(output_path) #exports the deck with its notes writes it as .apkg
+        print(f"[{deck_name}] Deck saved as {output_path} ({added_count} new notes)")
+    else:
+        print(f"[{deck_name}] No new cards to add. Nothing exported.")
+
+    total_added += added_count 
+    total_skipped += skipped_count
+
+save_seen_fronts(seen_fronts)
+
+print(f"\nTotal added: {total_added}")
+print(f"Total skipped: {total_skipped}")
+"""
