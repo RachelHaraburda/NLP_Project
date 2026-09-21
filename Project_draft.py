@@ -2,13 +2,12 @@ import nltk, pprint, random, spacy, asyncio
 from random import sample
 from spacy.matcher import Matcher
 from nltk.tokenize import word_tokenize
-#from deep_translator import GoogleTranslator
-from googletrans import Translator
 from pypdf import PdfReader
 from pathlib import Path
-from translator import deepl_vocab_translation
+#from translator import *
+#from anki_test import *
 
-auth = input("Please provide a DeepL API key\n")
+#auth = input("Please provide a DeepL API key\n")
 
 textfile_on = input("Would you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
 if textfile_on == "":
@@ -40,9 +39,11 @@ if amount == "":
 include_details = input("Would you like to include the morphological features for each word in your deck?[y/n]:\n")
 if include_details == "":
     quit()
-#make_deck = input("Do you want to make a flashcard deck")
-#deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards? #
-
+"""deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards? #
+if deck_name == "":
+    deck_name == input("You must name your deck or enter the name of an existing deck to continue:\n") 
+    if deck_name == "":
+        quit()"""
 
 def find_pos(word_type):
     if word_type.lower() == "adjective":
@@ -56,28 +57,6 @@ def find_pos(word_type):
         pos = "VERB"
         #matcher
     return pos
-
-def define_lang(l):# doesnt work with the translator
-    if str(l).lower() == "english":
-        l = "en"
-        return l
-    if str(l).lower() == "german":
-        l = "de"
-        return l
-    if str(l).lower() == "russian":
-        l = "ru"
-        return l
-    if str(l).lower() == "ukrainian":
-        l = "uk"
-        return l
-    if str(l).lower() == "french":
-        l = "fr"
-        return l
-    if str(l).lower() == "italian":
-        l = "it"
-        return l
-    else:
-        return("Language not supported")
     
 def load_lang(source):
     #print(source)
@@ -104,16 +83,9 @@ def load_lang(source):
 
 # Load the pre-trained model
 nlp = load_lang(source)
-#convert to language acronym for translation
 
-#source = define_lang(source)
-#target = define_lang(target)
-
-def get_tex_mor(token): # gathers then returns token lemma and token with features the way it appeared in source text
-    return([token.text, token.morph])
-
-def pull_sentence(token):
-    [sentence + '.' for sentence in source.split('.') if token in sentence] # stackoverflow Python how to extract sentence containing a word
+def get_mor(token): # gathers then returns token lemma and token with features the way it appeared in source text
+    return([token.morph])
 
 # Process the sentence
 if textfile_on:   
@@ -139,16 +111,18 @@ pos = find_pos(word_type)
 wanted_words= [] # list of all words that match the desired word type
 vocab_list= [] # random selected vocabualry words from text 
 cards = {} # dict of card with lemma as key, sentence where word appears in source text plus additional features as value list 
-# key = lemma_ . value = [translation, text, morph, sentance] 
+# key = lemma_ . value = [translation, text, morph] 
+
+lemmas = []
 
 for token in doc:
-    #print(token.pos_) 
-        if token.pos_ == pos:
-            if token.text not in wanted_words:
-                if include_details.lower() == "y":
-                    wanted_words.append([token.text, get_tex_mor(token)])
-                else:
-                    wanted_words.append([token.text])
+    if token.pos_ == pos:
+        if token.lemma_ not in lemmas:
+            lemmas.append(token.lemma_)
+            if include_details.lower() == "y":
+                wanted_words.append([token.lemma_, token.text, get_mor(token)])
+            else:
+                wanted_words.append([token.lemma_, token.text])
 
 count = len(wanted_words)
 
@@ -158,10 +132,13 @@ if str(amount).lower() == "all":
         for word in wanted_words:
             vocab_list.append(word)
     elif confirm2 == "":
-        quit
+        quit()
     else:
         amount = input("Specify amount: ")
-        vocab_list.append(sample(wanted_words, int(amount)))
+        if amount == "":
+            quit()
+        else:
+            vocab_list.append(sample(wanted_words, int(amount)))
 elif int(amount) >= len(wanted_words):
     amount = input(f"There are {count} unique {word_type}s and you wanted {amount} words. Specify new amount (maximum {count}): ")
     if amount == "":
@@ -176,13 +153,6 @@ vocab = [item[0] for item in vocab_list] # sort out lemmas for translation
 
 pprint.pprint(vocab_list)
 print(vocab)
-
-print(deepl_vocab_translation(auth, vocab, source, target))
-
-"""translated = []
-translator = Translator()
-for item in vocab:
-    trans = translator.translate(item, src= source, dest= target)
-    translated.append(trans.text)
-print(translated)"""
+#print(deepl_vocab_translation(auth, vocab, source, target))
 #print(cards)
+
