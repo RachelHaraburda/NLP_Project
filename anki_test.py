@@ -1,41 +1,64 @@
 import genanki
-import random #generate large random integer for unique ID, Anki needs it to tell Models and Decks apart.
-import json #tracks which words have been exported.
-import os #finds the folder,checks if seen_fronts already exists before reading it.
+import random
+import json 
+import os 
 import spacy
 
 nlp_models = {
     "German": spacy.load("de_core_news_sm"),
     "Japanese": spacy.load("ja_core_news_sm"),
 }
-#cd "C:\Users\Calvi\Downloads\Python Project Folder"  .venv\Scripts\activate
+
+def get_tex_mor(token):       #
+    tex = token.text          #
+    mor = token.morph         #Rachel's morphology, can be deleted once merged 
+    tex_mor = (tex, mor)      # 
+    return(tex_mor)           #
+
 
 def describe_morphology(text, lang_name):          
     nlp = nlp_models[lang_name]
     doc = nlp(text) #splits text into words/tokens as well as morphological feature
-    parts = [] #list that collects morphology description
-    for token in doc:
-        if token.is_punct: #skips punctuation like  .  !  ? 
+    parts = [] #list of morphology
+    for token in doc: 
+        if token.is_punct:
             continue
-        tag = f"{token.pos_} ({token.morph})" if str(token.morph) else token.pos_ #token.pos is part of speech. token.morph is gramatical feature(eg, Case|Gender) if checks if there are morphological features if not just NOUN
-        parts.append(tag) #adds the tag to parts list
-    return "<br>".join(parts) #parts has the list, join makes 1 long string. br is \n in HTML  since Anki cards are HTML is can't be \n. return gives the result back.
+        tex, mor = get_tex_mor(token) #gets words from tex and morphology from mor
+        tag = f"{tex}: {mor}" if str(mor) else tex #convert mor into a string. checks if mor is empty if empty false(show just word) true morphology exists build string with word and morphology
+        parts.append(tag) 
+    return "<br>".join(parts) #br is \n in HTML
+
+
+def get_article(target, lang_name): #detects German articles
+    if lang_name != "German":
+        return ""
+    nlp = nlp_models[lang_name]  
+    doc = nlp(target) 
+    for token in doc:
+        morph_str = str(token.morph) #convert to a string
+        if "Gender=Masc" in morph_str:
+            return "der"
+        elif "Gender=Fem" in morph_str:
+            return "die"
+        elif "Gender=Neut" in morph_str:
+            return "das"
+    return "" #if no gender return empty string
 
 
 SEEN_FILE = "seen_fronts.json" #remembers which words have been exported already, so no duplicates
-OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__)) #determines the folder path
+OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_seen_fronts():   #returns the set of words, that have been exported already
-    if os.path.exists(SEEN_FILE):  #checks if seen_fronts exists yet. Important on the very first time
+def load_seen_fronts(): 
+    if os.path.exists(SEEN_FILE): 
         with open(SEEN_FILE, "r", encoding="utf-8") as f:   #utf because of german letters like ä, ö, ü
-            return set(json.load(f))  #json.load reads the file's content. set() converts list into set, good to check duplicates. returns the functions result
-    return set()   # if there is nothing saved in json eg. first ever run return an empty set
+            return set(json.load(f))
+    return set()  
 
 
-def save_seen_fronts(seen):  #takes 1 input which are the exported words
-    with open(SEEN_FILE, "w", encoding="utf-8") as f:   #can overwrite the file
-        json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #sorted(seen) converts set back to a list good for saving the file. ensure_ascii=False makes characters like ä readable
+def save_seen_fronts(seen): 
+    with open(SEEN_FILE, "w", encoding="utf-8") as f: 
+        json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False makes characters like ä readable
 
 
 word_model = genanki.Model(
@@ -45,13 +68,13 @@ word_model = genanki.Model(
     templates=[
         {
             "name": "Card 1",
-            "qfmt": "{{English}}", #front
-            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>', #back, hr id="answer" draws horizontal line(starts a new line), Target inserts translation, br is a line break. 
+            "qfmt": "{{English}}", 
+            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', #back, hr id="answer" draws horizontal line(starts a new line), Target inserts translation, br is a line break. 
         },                                                  #details creates an open collapsible container just like a folder for "show morphology". summary defines a clickable label Show morphology is clickable in Anki. small morphology displays morphological features in smaller font. details closes collapsible container
         {
             "name": "Card 2", #reverse
             "qfmt": "{{Target}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>', #small so morphology is written smaller, hidden behind toggle
+            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', #small so morphology is written smaller, hidden behind toggle
         },
     ],
 )
@@ -64,12 +87,12 @@ noun_model = genanki.Model(  #want to see the article with the noun. Different t
         {
             "name": "Card 1",          #a lot of inspiration from kerrickstaley's genanki python model
             "qfmt": "{{English}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{Article}} {{Target}}<br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>',
+            "afmt": '{{FrontSide}}<hr id="answer">{{Article}} {{Target}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
         },
         {
             "name": "Card 2",
             "qfmt": "{{Article}} {{Target}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>',
+            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
         },
     ],
 )
@@ -82,12 +105,12 @@ verb_model = genanki.Model(
         {
             "name": "Card 1",
             "qfmt": "{{English}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>',
+            "afmt": '{{FrontSide}}<hr id="answer">{{Target}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
         },
         {
             "name": "Card 2",
             "qfmt": "{{Target}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><small>{{Morphology}}</small></details>',
+            "afmt": '{{FrontSide}}<hr id="answer">{{English}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
         },
     ],
 )
@@ -101,9 +124,9 @@ languages = {
             "cat": "Katze",
         },
         "nouns": {
-            "coffee": ("der", "Kaffee"), #value is a tuple ()
-            "house": ("das", "Haus"),
-            "woman": ("die", "Frau"),
+            "coffee": "Kaffee", 
+            "house": "Haus",
+            "woman": "Frau",
         },
         "verbs": {
             "to eat": ("essen", "Ich esse einen Apfel."),
@@ -116,7 +139,7 @@ languages = {
             "school": "学校",
         },
         "nouns": {
-            "park": ("", "公園"),  #no articles in japanese  ""empty
+            "park": "公園", 
         },
         "verbs": {
             "to eat": ("食べる", "リンゴを食べます。"),
@@ -126,16 +149,16 @@ languages = {
 }
 
 #Build decks
-seen_fronts = load_seen_fronts()  #seen fronts holds the words that have been exported
-total_added = 0  #tracks how many notes are added in the script. Visible in Terminal
-total_skipped = 0 #tracks how many notes have been skipped, previously exported. Visible in Terminal
+seen_fronts = load_seen_fronts() 
+total_added = 0  
+total_skipped = 0 
 
 # words are new, not yet in seen_fronts across all languages combined.
-new_word_count = 0   #counter
-for lang_name, data in languages.items():    #loops through languages dictionary
-    for english in data.get("words", {}):    # loops through word dictionary to get english(keys) words
-        if f"{lang_name}|{english}" not in seen_fronts:   #checks if key/value is in seen_fronts
-            new_word_count += 1   #counter +1
+new_word_count = 0 
+for lang_name, data in languages.items():    
+    for english in data.get("words", {}): 
+        if f"{lang_name}|{english}" not in seen_fronts:   
+            new_word_count += 1   
     for english in data.get("nouns", {}):
         if f"{lang_name}|{english}" not in seen_fronts:
             new_word_count += 1
@@ -143,45 +166,46 @@ for lang_name, data in languages.items():    #loops through languages dictionary
         if f"{lang_name}|{english}" not in seen_fronts:
             new_word_count += 1
 
-if new_word_count == 0:   #no new words
+if new_word_count == 0: 
     print("No new words found. Everything has already been exported.")
     raise SystemExit  #stops the script from running further
 
-answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower() #strip removes accidental spaces. lower  converts letters to lowercase
-if answer not in ("y", "yes"):  #"y" "yes" tuple of accepable values
+answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower()
+if answer not in ("y", "yes"):  
     print("Cancelled. Nothing was added or exported.")
     raise SystemExit
 
-for lang_name, data in languages.items(): #loops through language dictionary
+for lang_name, data in languages.items(): 
     deck = genanki.Deck( #creates a new(same) deck, every time the script runs
         random.randrange(1 << 30, 1 << 31),
         f"{lang_name} Vocabulary"
     )
 
-    added_count = 0 #inside the loop so get created fresh for any language after creation of new deck
-    skipped_count = 0 #same thing
+    added_count = 0 
+    skipped_count = 0 
 
     # Words
-    for english, target in data.get("words", {}).items(): #data is language vocabulary. items gets keys and values
+    for english, target in data.get("words", {}).items():
         key = f"{lang_name}|{english}"
-        if key in seen_fronts: #checks if key exists in seen_fronts.json
-            print(f"[{lang_name}] Skipped (duplicate): {english}") #notify user there is a duplicate
+        if key in seen_fronts: 
+            print(f"[{lang_name}] Skipped (duplicate): {english}") 
             skipped_count += 1
-            continue #next loop  
-        morphology = describe_morphology(target, lang_name) #using spacy to run a word through morphology function
-        note = genanki.Note(model=word_model, fields=[english, target, morphology]) #builds flashcard data. word_model is the structure. fields are values
-        deck.add_note(note) #attaches note to the current language deck
-        seen_fronts.add(key) #record a words as seen, key gets added into seen_fronts. word will be skipped as a duplicate in future runs
+            continue 
+        morphology = describe_morphology(target, lang_name) #generate mophology for the back of the flashcard
+        note = genanki.Note(model=word_model, fields=[english, target, morphology]) #builds flashcard data
+        deck.add_note(note) 
+        seen_fronts.add(key) #prevents duplicates next time
         added_count += 1
-        print(f"[{lang_name}] Added [word]: {english} -> {target} | {morphology}") #show user in terminal what has been added
+        print(f"[{lang_name}] Added [word]: {english} -> {target} | {morphology}") 
 
     # Nouns
-    for english, (article, target) in data.get("nouns", {}).items():
+    for english, target in data.get("nouns", {}).items():
         key = f"{lang_name}|{english}"
         if key in seen_fronts:
             print(f"[{lang_name}] Skipped (duplicate): {english}")
             skipped_count += 1
             continue
+        article = get_article(target, lang_name) #auto-detected instead of read from the dictionary
         morphology = describe_morphology(target, lang_name)
         note = genanki.Note(model=noun_model, fields=[english, article, target, morphology])
         deck.add_note(note)
@@ -203,17 +227,17 @@ for lang_name, data in languages.items(): #loops through language dictionary
         added_count += 1
         print(f"[{lang_name}] Added [verb]: {english} -> {target} | {morphology}")
 
-    if added_count > 0: #checks if there are any new notes, if every word is a duplicate 0
-        output_path = os.path.join(OUTPUT_DIR, f"{lang_name.lower()}_vocab.apkg") #f string builds filename. os.path.join(OUTPUT_DIR) combines filname with folder path
+    if added_count > 0: 
+        output_path = os.path.join(OUTPUT_DIR, f"{lang_name.lower()}_vocab.apkg") 
         genanki.Package(deck).write_to_file(output_path) #exports the deck with its notes writes it as .apkg
         print(f"[{lang_name}] Deck saved as {output_path} ({added_count} new notes)")
     else:
-        print(f"[{lang_name}] No new cards to add. Nothing exported.") #if added count is 0 skip file writing
+        print(f"[{lang_name}] No new cards to add. Nothing exported.")
 
-    total_added += added_count #add added_count to total added and store the number in total_added
-    total_skipped += skipped_count #same. grand total. good for saving file if there is anything new to save
+    total_added += added_count 
+    total_skipped += skipped_count
 
-save_seen_fronts(seen_fronts) #writes the final updated seen_fronts set back to seen_fronts.json
+save_seen_fronts(seen_fronts)
 
-print(f"\nTotal added: {total_added}") #shows grand total of every new note added, across all languages   
-print(f"Total skipped: {total_skipped}") #shows grand total of every duplicate skipped, across all languages
+print(f"\nTotal added: {total_added}")
+print(f"Total skipped: {total_skipped}")
