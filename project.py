@@ -5,91 +5,51 @@ from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
 #from translator import *
-from anki import build_cards
+#from anki import build_cards
 from collections import Counter
+from functions import load_lang, find_pos, deepl_vocab_translation, build_cards
 
-#auth = input("Please provide a DeepL API key\n")
 
-textfile_on = input("Would you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
+textfile_on = input("\nWould you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
 if textfile_on == "":
     quit()
 elif textfile_on:
-    user_input = input("Please input the filepath of the text from which to extract vocabulary:\n") 
+    user_input = input("\nPlease input the filepath of the text from which to extract vocabulary:\n") 
     if user_input == "":
         quit()
     elif not Path(user_input).suffix.lower() == ".txt" and not Path(user_input).suffix.lower() == ".pdf":
         raise ValueError("file format is not supported")
 
 else:
-    input_text = input("Enter text you would like to pull vocabualry from:\n") #raw string input from user
+    input_text = input("\nEnter text you would like to pull vocabualry from:\n") #raw string input from user
     if input_text == "":
         quit()
 
-source = input("Language of the input text:\n") 
+source = input("\nLanguage of the input text:\n") 
 if source == "":
     quit()
-own_translate = input("Would you like to use your own translator?[y/n]:\n")
+own_translate = input("\nWould you like to use your own translator?[y/n]:\n")
 if own_translate == "":
     quit()
 elif own_translate.lower() == "n":
-    target = input("What language would you like to translate the vocabulary words into?:\n")
+    auth = input("\nPlease provide a DeepL API key\n")
+    target = input("\nWhat language would you like to translate the vocabulary words into?:\n")
     if target == "":
         quit()
-word_type = input("What type of word would you like to learn?(verb, adjective, adverb, noun):\n")
+word_type = input("\nWhat type of word would you like to learn?(verb, adjective, adverb, noun):\n")
 if word_type == "":
     quit()
-include_details = input("Would you like to include the morphological features for each word in your deck?[y/n]:\n")
+include_details = input("\nWould you like to include the morphological features for each word in your deck?[y/n]:\n")
 if include_details == "":
     quit()
-deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards? #
+deck_name = input("\nName your flashcard deck: ") # enter an exisiting deck to append new cards? #
 if deck_name == "":
-    deck_name == input("You must name your deck or enter the name of an existing deck to continue:\n") 
+    deck_name == input("\nYou must name your deck or enter the name of an existing deck to continue:\n") 
     if deck_name == "":
         quit()
 
-def find_pos(word_type):
-    if word_type.lower() == "adjective":
-        pos = "ADJ"
-    if word_type.lower() == "adverb":
-        pos = "ADV"
-    if word_type.lower() == "noun":
-        pos = "NOUN"
-        #its possible to sort by word gender
-    if word_type.lower() == "verb":
-        pos = "VERB"
-        #matcher
-    return pos
-
-def load_lang(source): # Loads the spacy models and if needed installs them automatically. Installed models can be checked via "python -m spacy validate" 
-    models = {
-        "english":"en_core_web_sm"
-        ,"german":"de_core_news_sm"
-        ,"french":"fr_core_news_sm"
-        ,"italian":"it_core_news_sm"
-        ,"spanish":"es_core_news_sm"
-        ,"portuguese":"pt_core_news_sm"
-        ,"greek":"el_core_news_sm"
-        ,"swedish":"sv_core_news_sm"
-        ,"finnish":"fi_core_news_sm"
-        ,"polish":"pl_core_news_sm"
-        ,"ukrainian":"uk_core_news_sm"
-        ,"russian":"ru_core_news_sm"
-        ,"japanese":"ja_core_news_sm"
-        ,"chinese":"zh_core_web_sm"
-        ,"korean":"ko_core_news_sm"
-        ,"dutch":"nl_core_news_sm"
-        ,"danish":"da_core_news_sm"}
-
-    try:
-        selected_model = models[source]
-        return spacy.load(selected_model)
-    except KeyError:
-            raise ValueError(f"Language not supported: {source}")
-    except OSError:
-       print(f"The model {selected_model} is not installed, proceeding with installation ...")
-       subprocess.check_call([sys.executable, "-m", "spacy", "download", selected_model])
-       return spacy.load(selected_model)
         
+
 # Load the pre-trained model
 nlp = load_lang(source)
 
@@ -123,12 +83,13 @@ lemmas = []
 
 for token in doc:
     if token.pos_ == pos:
-        if token.lemma_ not in lemmas:
-            lemmas.append(token.lemma_)
-            if include_details.lower() == "y":
-                wanted_words.append([token.lemma_, token.text, token.morph])
-            else:
-                wanted_words.append([token.lemma_, token.text])
+        if not token.is_punct and not token.is_space: #filters out unwandted characters (!; .; \n; etc...)
+            if token.lemma_ not in lemmas:
+                lemmas.append(token.lemma_)
+                if include_details.lower() == "y":
+                    wanted_words.append([token.lemma_, token.text, str(token.morph)])
+                else:
+                    wanted_words.append([token.lemma_, token.text])
 
 count = len(wanted_words)
 amount = input(f"There are {count} unique {word_type}s. How many words would you like to learn?(number or 'all'):\n")
@@ -138,21 +99,26 @@ elif amount == "all":
     for word in wanted_words:
         vocab_list.append(word)
 else:
-    vocab_list.append(sample(wanted_words, int(amount)))
+    for word in sample(wanted_words, int(amount)):
+        vocab_list.append(word)
+        
 
 #pull token.text for translation
 vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
 
+
+#temp to delete print("\n", vocab, type(vocab)) #[['autore', 'autori', Gender=Masc|Number=Plur]] <class 'list'>
 pprint.pprint(vocab_list)
 
 if own_translate.lower() == "y":
     print('[{}]'.format(', '.join(vocab)))
 #test for inserting translations and converting to cards dictionary
-    translations = input("translated tokens here:\n")
+    translations = input("\nPlease translate the tokens and paste them here:\n")
     translations = list([x.strip() for x in translations.split(',')])
-    print(translations)
-#else:
-#translation = deepl_vocab_translation(auth, vocab, source, target)
+    print("\n",translations)
+else:
+    translations = deepl_vocab_translation(auth, vocab, source, target)
+
 i = 0
 for item in vocab_list:
     item.insert(1, translations[i])
@@ -162,5 +128,7 @@ for item in vocab_list:
 for item in vocab_list:
     cards.update({item[0] : item[1:]})
 
-print(cards)
-#build_cards(pos= pos, languages= cards, deck_name= deck_name)
+print("\n")
+pprint.pprint(cards)
+print("\n")
+build_cards(pos, cards, deck_name)
