@@ -1,11 +1,12 @@
-import nltk, pprint, random, spacy, asyncio
+import nltk, pprint, random, spacy, asyncio, subprocess, sys
 from random import sample
 from spacy.matcher import Matcher
 from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
 #from translator import *
-#from anki_test import *
+from anki_test import build_cards
+from collections import Counter
 
 #auth = input("Please provide a DeepL API key\n")
 
@@ -39,11 +40,11 @@ if amount == "":
 include_details = input("Would you like to include the morphological features for each word in your deck?[y/n]:\n")
 if include_details == "":
     quit()
-"""deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards? #
+deck_name = input("Name your flashcard deck: ") # enter an exisiting deck to append new cards? #
 if deck_name == "":
     deck_name == input("You must name your deck or enter the name of an existing deck to continue:\n") 
     if deck_name == "":
-        quit()"""
+        quit()
 
 def find_pos(word_type):
     if word_type.lower() == "adjective":
@@ -57,8 +58,38 @@ def find_pos(word_type):
         pos = "VERB"
         #matcher
     return pos
-    
-def load_lang(source):
+
+def load_lang(source): # Loads the spacy models and if needed installs them automatically. Installed models can be checked via "python -m spacy validate" 
+    models = {
+        "english":"en_core_web_sm"
+        ,"german":"de_core_news_sm"
+        ,"french":"fr_core_news_sm"
+        ,"italian":"it_core_news_sm"
+        ,"spanish":"es_core_news_sm"
+        ,"portuguese":"pt_core_news_sm"
+        ,"greek":"el_core_news_sm"
+        ,"swedish":"sv_core_news_sm"
+        ,"finnish":"fi_core_news_sm"
+        ,"polish":"pl_core_news_sm"
+        ,"ukrainian":"uk_core_news_sm"
+        ,"russian":"ru_core_news_sm"
+        ,"japanese":"ja_core_news_sm"
+        ,"chinese":"zh_core_web_sm"
+        ,"korean":"ko_core_news_sm"
+        ,"dutch":"nl_core_news_sm"
+        ,"danish":"da_core_news_sm"}
+
+    try:
+        selected_model = models[source]
+        return spacy.load(selected_model)
+    except KeyError:
+            raise ValueError(f"Language not supported: {source}")
+    except OSError:
+       print(f"The model {selected_model} is not installed, proceeding with installation ...")
+       subprocess.check_call([sys.executable, "-m", "spacy", "download", selected_model])
+       return spacy.load(selected_model)
+        
+"""def load_lang(source):
     #print(source)
     if str(source).lower() == "english":
         source_lang = spacy.load("en_core_web_sm")
@@ -79,13 +110,10 @@ def load_lang(source):
         source_lang = spacy.load("it_core_news_sm")
         return source_lang
     else:
-        raise ValueError("Language not supported")
+        raise ValueError("Language not supported")"""
 
 # Load the pre-trained model
 nlp = load_lang(source)
-
-def get_mor(token): # gathers then returns token lemma and token with features the way it appeared in source text
-    return([token.morph])
 
 # Process the sentence
 if textfile_on:   
@@ -120,7 +148,7 @@ for token in doc:
         if token.lemma_ not in lemmas:
             lemmas.append(token.lemma_)
             if include_details.lower() == "y":
-                wanted_words.append([token.lemma_, token.text, get_mor(token)])
+                wanted_words.append([token.lemma_, token.text, token.morph])
             else:
                 wanted_words.append([token.lemma_, token.text])
 
@@ -156,7 +184,7 @@ pprint.pprint(vocab_list)
 
 print('[{}]'.format(', '.join(vocab)))
 #test for inserting translations and converting to cards dictionary
-"""translations = input("translated tokens here:\n")
+translations = input("translated tokens here:\n")
 translations = list([x.strip() for x in translations.split(',')])
 print(translations)
 i = 0
@@ -169,94 +197,5 @@ for item in vocab_list:
     cards.update({item[0] : item[1:]})
 
 #print(deepl_vocab_translation(auth, vocab, source, target))
-print(cards)"""
-
-"""
-#Build decks
-seen_fronts = load_seen_fronts() 
-total_added = 0  
-total_skipped = 0 
-
-new_word_count = 0 
-for deck_name, data in cards.items():    
-    for english in data: 
-        if f"{deck_name}|{english}" not in seen_fronts:   
-            new_word_count += 1
-
-if new_word_count == 0: 
-    print("No new words found. Everything has already been exported.")
-    raise SystemExit  #stops the script from running further
-
-answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower()
-if answer not in ("y", "yes"):  
-    print("Cancelled. Nothing was added or exported.")
-    raise SystemExit
-
-for deck_name, data in cards.items(): 
-    deck = genanki.Deck( #creates a new(same) deck, every time the script runs
-        random.randrange(1 << 30, 1 << 31),
-        f"{deck_name} Vocabulary"
-    )
-
-    added_count = 0 
-    skipped_count = 0 
-
-    # Verbs
-    if pos == "VERB":
-        for english, (target, example) in data.get.items():
-            key = f"{deck_name}|{english}"
-            if key in seen_fronts:
-                    print(f"[{deck_name}] Skipped (duplicate): {english}")
-                    skipped_count += 1
-                    continue
-            morphology = describe_morphology(target, deck_name)
-            note = genanki.Note(model=verb_model, fields=[english, target, example, morphology])
-            deck.add_note(note)
-            seen_fronts.add(key)
-            added_count += 1
-            print(f"[{deck_name}] Added [verb]: {english} -> {target} | {morphology}")
-
-    # Nouns
-    if pos == "NOUN":
-        for english, target in data.get.items():
-            if key in seen_fronts:
-                print(f"[{deck_name}] Skipped (duplicate): {english}")
-                skipped_count += 1
-                continue
-            article = get_article(target, deck_name) #auto-detected instead of read from the dictionary
-            morphology = describe_morphology(target, deck_name)
-            note = genanki.Note(model=noun_model, fields=[english, article, target, morphology])
-            deck.add_note(note)
-            seen_fronts.add(key)
-            added_count += 1
-            print(f"[{deck_name}] Added [noun]: {english} -> {article} {target} | {morphology}")
-    # Words
-    else:
-        for english, target in data.get.items():
-            key = f"{deck_name}|{english}"
-            if key in seen_fronts: 
-                print(f"[{deck_name}] Skipped (duplicate): {english}") 
-                skipped_count += 1
-                continue 
-            morphology = describe_morphology(target, deck_name) #generate mophology for the back of the flashcard
-            note = genanki.Note(model=word_model, fields=[english, target, morphology]) #builds flashcard data
-            deck.add_note(note) 
-            seen_fronts.add(key) #prevents duplicates next time
-            added_count += 1
-            print(f"[{deck_name}] Added [word]: {english} -> {target} | {morphology}") 
-
-    if added_count > 0: 
-        output_path = os.path.join(OUTPUT_DIR, f"{deck_name.lower()}_vocab.apkg") 
-        genanki.Package(deck).write_to_file(output_path) #exports the deck with its notes writes it as .apkg
-        print(f"[{deck_name}] Deck saved as {output_path} ({added_count} new notes)")
-    else:
-        print(f"[{deck_name}] No new cards to add. Nothing exported.")
-
-    total_added += added_count 
-    total_skipped += skipped_count
-
-save_seen_fronts(seen_fronts)
-
-print(f"\nTotal added: {total_added}")
-print(f"Total skipped: {total_skipped}")
-"""
+#print(cards)
+build_cards(pos= pos, languages= cards, deck_name= deck_name)
