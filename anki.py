@@ -4,46 +4,6 @@ import json
 import os 
 import spacy
 
-"""nlp_models = {
-    "German": spacy.load("de_core_news_sm"),
-    "Japanese": spacy.load("ja_core_news_sm"),
-}"""
-
-"""def get_tex_mor(token):       #
-    tex = token.text          #
-    mor = token.morph         #Rachel's morphology, can be deleted once merged 
-    tex_mor = (tex, mor)      # 
-    return(tex_mor)           #"""
-
-
-def describe_morphology(text, lang_name):          
-    nlp = nlp_models[lang_name]
-    doc = nlp(text) #splits text into words/tokens as well as morphological feature
-    parts = [] #list of morphology
-    for token in doc: 
-        if token.is_punct:
-            continue
-        tex, mor = get_tex_mor(token) #gets words from tex and morphology from mor
-        tag = f"{tex}: {mor}" if str(mor) else tex #convert mor into a string. checks if mor is empty if empty false(show just word) true morphology exists build string with word and morphology
-        parts.append(tag) 
-    return "<br>".join(parts) #br is \n in HTML
-
-
-#def get_article(back, lang_name): #detects German articles
-    if lang_name != "German":
-        return ""
-    nlp = nlp_models[lang_name]  
-    doc = nlp(back) 
-    for token in doc:
-        morph_str = str(token.morph) #convert to a string
-        if "Gender=Masc" in morph_str:
-            return "der"
-        elif "Gender=Fem" in morph_str:
-            return "die"
-        elif "Gender=Neut" in morph_str:
-            return "das"
-    return "" #if no gender return empty string
-
 
 SEEN_FILE = "seen_fronts.json" #remembers which words have been exported already, so no duplicates
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,11 +15,9 @@ def load_seen_fronts():
             return set(json.load(f))
     return set()  
 
-
 def save_seen_fronts(seen): 
     with open(SEEN_FILE, "w", encoding="utf-8") as f: 
         json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False keeps characters like ä or 私 as they are
-
 
 word_model = genanki.Model(
     random.randrange(1 << 30, 1 << 31), #unique ID for the model. 1 << 30, 1 << 31 recommended by GenAnki
@@ -78,75 +36,6 @@ word_model = genanki.Model(
         },
     ],
 )
-
-noun_model = genanki.Model(  #want to see the article with the noun. Different type of flashcard
-    random.randrange(1 << 30, 1 << 31),
-    "Noun Model", # note type shown in Anki note type list
-    fields=[{"name": "front"}, {"name": "Article"}, {"name": "back"}, {"name": "Morphology"}],
-    templates=[
-        {
-            "name": "Card 1",          #a lot of inspiration from kerrickstaley's genanki python model
-            "qfmt": "{{front}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{Article}} {{back}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
-        },
-        {
-            "name": "Card 2",
-            "qfmt": "{{Article}} {{back}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{front}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
-        },
-    ],
-)
-
-"""#verb_model = genanki.Model(
-    random.randrange(1 << 30, 1 << 31),
-    "Verb Model",
-    fields=[{"name": "front"}, {"name": "back"}, {"name": "Example"}, {"name": "Morphology"}], #example for a full esentence
-    templates=[
-        {
-            "name": "Card 1",
-            "qfmt": "{{front}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{back}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
-        },
-        {
-            "name": "Card 2",
-            "qfmt": "{{back}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{front}}<br><i>{{Example}}</i><br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
-        },
-    ],
-)"""
-
-"""#languages = {
-    "German": {
-        "words": {
-            "hello": "hallo",
-            "goodbye": "Tschüss",
-            "How are you?": "Wie geht es dir?",
-            "cat": "Katze",
-        },
-        "nouns": {
-            "coffee": "Kaffee", 
-            "house": "Haus",
-            "woman": "Frau",
-        },
-        "verbs": {
-            "to eat": ("essen", "Ich esse einen Apfel."),
-            "to go": ("gehen", "Ich gehe nach Hause."),
-        },
-    },
-    "Japanese": {
-        "words": {
-            "hello": "こんにちは",
-            "school": "学校",
-        },
-        "nouns": {
-            "park": "公園", 
-        },
-        "verbs": {
-            "to eat": ("食べる", "リンゴを食べます。"),
-            "to sleep": ("寝る", "私は早く寝ます。"),
-        },
-    },
-}"""
 
 #Build decks
 seen_fronts = load_seen_fronts() 

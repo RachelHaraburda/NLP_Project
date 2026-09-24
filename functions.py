@@ -66,13 +66,17 @@ def deepl_vocab_translation(key, vocab, source, target):
 #/////////////////////////////////////
 #//////////anki card builder//////////
 
-SEEN_FILE = "seen_fronts.json"
+SEEN_FILE = "seen_fronts.json" #remembers which words have been exported already, so no duplicates
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 def load_seen_fronts(): 
     if os.path.exists(SEEN_FILE): 
         with open(SEEN_FILE, "r", encoding="utf-8") as f:   #utf makes non latin characters like ä or 私 read correctly
             return set(json.load(f))
     return set()
+
+def save_seen_fronts(seen): 
+    with open(SEEN_FILE, "w", encoding="utf-8") as f: 
+        json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False keeps characters like ä or 私 as they are
 
 word_model = genanki.Model(
     random.randrange(1 << 30, 1 << 31), #unique ID for the model. 1 << 30, 1 << 31 recommended by GenAnki
@@ -95,11 +99,30 @@ def build_cards(pos, cards, deck_name):# takes a dictionary as argument
     total_added = 0  
     total_skipped = 0 
     seen_fronts = load_seen_fronts()
+    new_word_count = 0 # words are new, not yet in seen_fronts
+
+    added_count = 0 
+    skipped_count = 0
+
+    """for lang_name, data in languages.items():    
+    for front in data.get("words", {}): 
+        if f"{lang_name}|{front}" not in seen_fronts:   
+            new_word_count += 1   
+    for front in data.get("nouns", {}):
+        if f"{lang_name}|{front}" not in seen_fronts:
+            new_word_count += 1
+
+    if new_word_count == 0: 
+        print("No new words found. Everything has already been exported.")
+        raise SystemExit  #stops the script from running further
+
+    answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower()
+    if answer not in ("y", "yes"):  
+        print("Cancelled. Nothing was added or exported.")
+        raise SystemExit"""
+
     deck = genanki.Deck(random.randrange(1 << 30, 1 << 31), deck_name)#creates a new(same) deck, every time the script runs
     for front_vocab, back_vocab in cards.items(): 
-        added_count = 0 
-        skipped_count = 0 
-        
         if front_vocab in seen_fronts: 
             print(f"[{deck_name}] Skipped (duplicate): {front_vocab}") 
             skipped_count += 1
@@ -112,7 +135,7 @@ def build_cards(pos, cards, deck_name):# takes a dictionary as argument
         print(f"[{deck_name}] Added [word]: {front_vocab} -> {back_vocab[0]} | {morphology}") 
     
     if added_count > 0: 
-        output_path = os.path.join(OUTPUT_DIR, f"{deck_name}_vocab.apkg") 
+        output_path = os.path.join(OUTPUT_DIR, f"{deck_name}.apkg") 
         genanki.Package(deck).write_to_file(output_path) #exports the deck with its notes writes it as .apkg
         print("\n")
         print(f"[{deck_name}] Deck saved as {output_path} ({added_count} new notes)")
@@ -121,7 +144,9 @@ def build_cards(pos, cards, deck_name):# takes a dictionary as argument
 
     total_added += added_count 
     total_skipped += skipped_count
-
-
+    
+    save_seen_fronts(seen_fronts)
+    print(f"\nTotal added: {total_added}")
+    print(f"Total skipped: {total_skipped}")
 
 
