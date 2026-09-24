@@ -1,4 +1,5 @@
-import  spacy, subprocess, sys, deepl, langcodes, language_data, genanki, random, os, json
+import  spacy, subprocess, sys, genanki, random, os, json
+import deepl, langcodes, language_data #not required if using external translator
 
 def load_lang(source): # Loads the spacy models and if needed installs them automatically. Installed models can be checked via "python -m spacy validate" 
     models = {
@@ -95,7 +96,7 @@ word_model = genanki.Model(
         },
     ],
 )
-def build_cards(pos, cards, deck_name):# takes a dictionary as argument
+def build_cards(cards, deck_name):# takes a dictionary and a string as arguments
     total_added = 0  
     total_skipped = 0 
     seen_fronts = load_seen_fronts()

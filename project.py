@@ -4,11 +4,8 @@ from spacy.matcher import Matcher
 from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
-#from translator import *
-#from anki import build_cards
 from collections import Counter
 from functions import load_lang, find_pos, deepl_vocab_translation, build_cards
-
 
 textfile_on = input("\nWould you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
 if textfile_on == "":
@@ -47,8 +44,6 @@ if deck_name == "":
     deck_name == input("\nYou must name your deck or enter the name of an existing deck to continue:\n") 
     if deck_name == "":
         quit()
-
-        
 
 # Load the pre-trained model
 nlp = load_lang(source)
@@ -92,7 +87,7 @@ for token in doc:
                     wanted_words.append([token.lemma_, token.text])
 
 count = len(wanted_words)
-amount = input(f"There are {count} unique {word_type}s. How many words would you like to learn?(number or 'all'):\n")
+amount = input(f"\nThere are {count} unique {word_type}s. How many words would you like to learn?(number or 'all'):\n")
 if amount == "":
     quit()
 elif amount == "all":
@@ -111,6 +106,7 @@ vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
 pprint.pprint(vocab_list)
 
 if own_translate.lower() == "y":
+    print("\n")
     print('[{}]'.format(', '.join(vocab)))
 #test for inserting translations and converting to cards dictionary
     translations = input("\nPlease translate the tokens and paste them here:\n")
@@ -131,4 +127,4 @@ for item in vocab_list:
 print("\n")
 pprint.pprint(cards)
 print("\n")
-build_cards(pos, cards, deck_name)
+build_cards(cards, deck_name)
