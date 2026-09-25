@@ -84,7 +84,7 @@ def save_seen_fronts(seen):
         json.dump(sorted(seen), f, ensure_ascii=False, indent=2) #ensure_ascii=False keeps characters like ä or 私 as they are
 
 word_model = genanki.Model(
-    random.randrange(1 << 30, 1 << 31), #unique ID for the model. 1 << 30, 1 << 31 recommended by GenAnki
+    1892138122,
     "Word Model",
     fields=[{"name": "front"}, {"name": "Back"}, {"name": "Morphology"}], #back = back language
     templates=[
@@ -92,17 +92,11 @@ word_model = genanki.Model(
             "name": "Card 1",
             "qfmt": "{{front}}", 
             "afmt": '{{FrontSide}}<hr id="answer">{{Back}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
-        },                                                  
-        {
-            "name": "Card 2", #reverse
-            "qfmt": "{{Back}}",
-            "afmt": '{{FrontSide}}<hr id="answer">{{front}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>', 
         },
     ],
 )
 def build_cards(cards, deck_name):# takes a dictionary and a string as arguments
-    total_added = 0  
-    total_skipped = 0 
+    total_added = 0 
     seen_fronts = load_seen_fronts()
     new_word_count = 0 # words are new, not yet in seen_fronts
 
@@ -140,18 +134,17 @@ def build_cards(cards, deck_name):# takes a dictionary and a string as arguments
         print(f"[{deck_name}] Added [word]: {front_vocab} -> {back_vocab[0]} | {morphology}") 
     
     if added_count > 0: 
-        output_path = os.path.join(OUTPUT_DIR, f"{deck_name}.apkg") 
+        output_path = os.path.join(CONFIG_DIR, f"{deck_name}.apkg") 
         genanki.Package(deck).write_to_file(output_path) #exports the deck with its notes writes it as .apkg
         print("\n")
         print(f"[{deck_name}] Deck saved as {output_path} ({added_count} new notes)")
     else:
         print(f"[{deck_name}] No new cards to add. Nothing exported.")
 
-    total_added += added_count 
-    total_skipped += skipped_count
+    total_added += added_count
     
     save_seen_fronts(seen_fronts)
     print(f"\nTotal added: {total_added}")
-    print(f"Total skipped: {total_skipped}")
+    
 
 

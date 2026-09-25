@@ -5,30 +5,29 @@ from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
 from collections import Counter
-from functions import load_lang, find_pos, deepl_vocab_translation, build_cards
+from functions import load_lang, find_pos, deepl_vocab_translation, build_cards, load_seen_fronts
 
-textfile_on = input("\nWould you like to use a filepath (y/n)?:\n").lower() == "y" #produces a boolean which is used later for sentences processing  
-if textfile_on == "":
-    quit()
-elif textfile_on:
+textfile_on = input("\nWould you like to use a filepath (y/n)?:\n") #produces a boolean which is used later for sentences processing  
+if textfile_on.lower() == "y":
     user_input = input("\nPlease input the filepath of the text from which to extract vocabulary:\n") 
     if user_input == "":
         quit()
     elif not Path(user_input).suffix.lower() == ".txt" and not Path(user_input).suffix.lower() == ".pdf":
         raise ValueError("file format is not supported")
-
+if textfile_on != "n":
+    quit()
 else:
     input_text = input("\nEnter text you would like to pull vocabualry from:\n") #raw string input from user
     if input_text == "":
         quit()
 
-source = input("\nLanguage of the input text:\n") 
+dpl = input("\nWould you like to use DeepL API[y/n]:\n")
+if dpl == "":
+    quit()
+source = input("\nLanguage of the input text:\n")
 if source == "":
     quit()
-own_translate = input("\nWould you like to use your own translator instead of the DeepL API (a key is required for API usage)?[y/n]:\n")
-if own_translate == "":
-    quit()
-elif own_translate.lower() == "n":
+elif dpl.lower() == "y":
     OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
     CONFIG_DIR = os.path.join(OUTPUT_DIR, "Vocab_Config")
     AUTH_FILE = os.path.join(CONFIG_DIR, "deepl_authentication_key.txt")
@@ -41,6 +40,8 @@ elif own_translate.lower() == "n":
         
     if not auth:
         auth = input("\nPlease provide a DeepL API key\n")
+        if auth == "":
+            quit()
         with open(AUTH_FILE, "w") as file: 
             file.write(auth)
             
@@ -53,20 +54,15 @@ if word_type == "":
 include_details = input("\nWould you like to include the morphological features for each word in your deck?[y/n]:\n")
 if include_details == "":
     quit()
-deck_name = input("\nName your flashcard deck: ") # enter an exisiting deck to append new cards? #
-if deck_name == "":
-    deck_name == input("\nYou must name your deck or enter the name of an existing deck to continue:\n") 
-    if deck_name == "":
-        quit()
 
 # Load the pre-trained model
 nlp = load_lang(source)
 
 # Process the sentence
-if textfile_on:   
+if textfile_on.lower() == "y":   
     file_path = Path(user_input)
     if file_path.suffix.lower() == ".txt": #use pathlib (previously regex) to check file format. supported file formats are currently: txt, pdf
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             doc = nlp(file.read())
     elif file_path.suffix.lower() == ".pdf": #use pypdf to open pdf files and extract text
         reader = PdfReader(file_path)
@@ -89,22 +85,30 @@ cards = {} # dict of card with lemma as key, sentence where word appears in sour
 # key = lemma_ . value = [translation, text, morph] 
 
 lemmas = []
+seen_fronts = load_seen_fronts()
+skip_counter = 0
 
 for token in doc:
     if token.pos_ == pos:
-        if not token.is_punct and not token.is_space: #filters out unwandted characters (!; .; \n; etc...)
-            if token.lemma_ not in lemmas:
+        if not token.is_punct and not token.is_space and not token.is_digit: #filters out unwandted characters (!; .; \n; etc...)
+            if token.lemma_ not in lemmas and token.lemma_ not in seen_fronts:
                 lemmas.append(token.lemma_)
                 if include_details.lower() == "y":
                     wanted_words.append([token.lemma_, token.text, str(token.morph)])
                 else:
                     wanted_words.append([token.lemma_, token.text])
+            elif token.lemma_ in seen_fronts:
+                skip_counter += 1
 
 count = len(wanted_words)
+if count == 0:
+    print("No new words were found")
+    raise SystemExit
+
 amount = input(f"\nThere are {count} unique {word_type}s. How many words would you like to learn?(number or 'all'):\n")
 if amount == "":
     quit()
-elif amount == "all":
+elif amount.lower() == "all":
     for word in wanted_words:
         vocab_list.append(word)
 else:
@@ -119,7 +123,7 @@ vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
 #temp to delete print("\n", vocab, type(vocab)) #[['autore', 'autori', Gender=Masc|Number=Plur]] <class 'list'>
 pprint.pprint(vocab_list)
 
-if own_translate.lower() == "y":
+if dpl.lower() == "n":
     print("\n")
     print('[{}]'.format(', '.join(vocab)))
 #test for inserting translations and converting to cards dictionary
@@ -138,7 +142,14 @@ for item in vocab_list:
 for item in vocab_list:
     cards.update({item[0] : item[1:]})
 
+deck_name = input("\nName your flashcard deck: ") # enter an exisiting deck to append new cards? #
+if deck_name == "":
+    deck_name == input("\nYou must name your deck or enter the name of an existing deck to continue:\n") 
+    if deck_name == "":
+        quit()
+
 print("\n")
 pprint.pprint(cards)
 print("\n")
 build_cards(cards, deck_name)
+print(f"Total skipped: {skip_counter}")
