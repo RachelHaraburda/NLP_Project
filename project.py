@@ -1,4 +1,4 @@
-import nltk, pprint, random, spacy, asyncio, subprocess, sys
+import nltk, pprint, random, spacy, asyncio, subprocess, sys, os
 from random import sample
 from spacy.matcher import Matcher
 from nltk.tokenize import word_tokenize
@@ -25,11 +25,25 @@ else:
 source = input("\nLanguage of the input text:\n") 
 if source == "":
     quit()
-own_translate = input("\nWould you like to use your own translator?[y/n]:\n")
+own_translate = input("\nWould you like to use your own translator instead of the DeepL API (a key is required for API usage)?[y/n]:\n")
 if own_translate == "":
     quit()
 elif own_translate.lower() == "n":
-    auth = input("\nPlease provide a DeepL API key\n")
+    OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_DIR = os.path.join(OUTPUT_DIR, "Vocab_Config")
+    AUTH_FILE = os.path.join(CONFIG_DIR, "deepl_authentication_key.txt")
+    
+    auth = ""
+
+    if os.path.exists(AUTH_FILE):
+        with open(AUTH_FILE, "r") as file:
+            auth = file.read()
+        
+    if not auth:
+        auth = input("\nPlease provide a DeepL API key\n")
+        with open(AUTH_FILE, "w") as file: 
+            file.write(auth)
+            
     target = input("\nWhat language would you like to translate the vocabulary words into?:\n")
     if target == "":
         quit()

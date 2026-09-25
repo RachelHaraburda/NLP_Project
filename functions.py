@@ -67,8 +67,12 @@ def deepl_vocab_translation(key, vocab, source, target):
 #/////////////////////////////////////
 #//////////anki card builder//////////
 
-SEEN_FILE = "seen_fronts.json" #remembers which words have been exported already, so no duplicates
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.join(OUTPUT_DIR, "Vocab_Config")
+os.makedirs(CONFIG_DIR, exist_ok=True)
+
+SEEN_FILE = os.path.join(CONFIG_DIR, "seen_fronts.json") #remembers which words have been exported already, so no duplicates
+
 def load_seen_fronts(): 
     if os.path.exists(SEEN_FILE): 
         with open(SEEN_FILE, "r", encoding="utf-8") as f:   #utf makes non latin characters like ä or 私 read correctly
