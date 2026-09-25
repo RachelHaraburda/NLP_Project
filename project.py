@@ -21,7 +21,7 @@ else:
     if input_text == "":
         quit()
 
-dpl = input("\nWould you like to use DeepL API[y/n]:\n")
+dpl = input("\nWould you like to use a DeepL API key[y/n]:\n")
 if dpl == "":
     quit()
 source = input("\nLanguage of the input text:\n")
@@ -119,17 +119,17 @@ else:
 #pull token.text for translation
 vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
 
-
-#temp to delete print("\n", vocab, type(vocab)) #[['autore', 'autori', Gender=Masc|Number=Plur]] <class 'list'>
-pprint.pprint(vocab_list)
+#pprint.pprint(vocab_list)
 
 if dpl.lower() == "n":
-    print("\n")
-    print('[{}]'.format(', '.join(vocab)))
+    print("\n",', '.join(map(str, vocab)))
 #test for inserting translations and converting to cards dictionary
     translations = input("\nPlease translate the tokens and paste them here:\n")
-    translations = list([x.strip() for x in translations.split(',')])
-    print("\n",translations)
+    if translations == "":
+        quit()
+    else:
+        translations = list([x.strip() for x in translations.split(',')])
+    #print("\n",translations)
 else:
     translations = deepl_vocab_translation(auth, vocab, source, target)
 
@@ -149,7 +149,7 @@ if deck_name == "":
         quit()
 
 print("\n")
-pprint.pprint(cards)
+#pprint.pprint(cards)
 print("\n")
 build_cards(cards, deck_name)
 print(f"Total skipped: {skip_counter}")
