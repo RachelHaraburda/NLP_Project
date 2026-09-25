@@ -14,9 +14,9 @@ if textfile_on.lower() == "y":
         quit()
     elif not Path(user_input).suffix.lower() == ".txt" and not Path(user_input).suffix.lower() == ".pdf":
         raise ValueError("file format is not supported")
-if textfile_on != "n":
+if textfile_on != "n" and textfile_on != "y":
     quit()
-else:
+elif textfile_on == "n" :
     input_text = input("\nEnter text you would like to pull vocabualry from:\n") #raw string input from user
     if input_text == "":
         quit()
