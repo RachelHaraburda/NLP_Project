@@ -38,11 +38,13 @@ def find_pos(word_type):
         pos = "ADV"
     if word_type.lower() == "noun":
         pos = "NOUN"
-        #its possible to sort by word gender
     if word_type.lower() == "verb":
         pos = "VERB"
-        #matcher
     return pos
+
+
+def pull_sentence(source, token):
+    return(sentence + '.' for sentence in source.split('.') if token in sentence) # stackoverflow Python how to extract sentence containing a word
 
 #deepl implementation /// authentication key, has to be provided by the user
 def deepl_vocab_translation(key, vocab, source, target):
@@ -86,12 +88,12 @@ def save_seen_fronts(seen):
 word_model = genanki.Model(
     1892138122,
     "Word Model",
-    fields=[{"name": "front"}, {"name": "Back"}, {"name": "Morphology"}], #back = back language
+    fields=[{"name": "front"}, {"name": "Back"}, {"name": "Morphology"}],
     templates=[
         {
             "name": "Card 1",
             "qfmt": "{{front}}", 
-            "afmt": '{{FrontSide}}<hr id="answer">{{Back}}<br><details><summary>Show morphology</summary><br><small>{{Morphology}}</small></details>',
+            "afmt": '{{FrontSide}}<hr id="answer">{{Back}}<br><details><summary>Show example</summary><br><small>{{Morphology}}</small></details>',
         },
     ],
 )
@@ -101,32 +103,10 @@ def build_cards(cards, deck_name):# takes a dictionary and a string as arguments
     new_word_count = 0 # words are new, not yet in seen_fronts
 
     added_count = 0 
-    skipped_count = 0
-
-    """for lang_name, data in languages.items():    
-    for front in data.get("words", {}): 
-        if f"{lang_name}|{front}" not in seen_fronts:   
-            new_word_count += 1   
-    for front in data.get("nouns", {}):
-        if f"{lang_name}|{front}" not in seen_fronts:
-            new_word_count += 1
-
-    if new_word_count == 0: 
-        print("No new words found. Everything has already been exported.")
-        raise SystemExit  #stops the script from running further
-
-    answer = input(f"Found {new_word_count} new word(s). Add them to the deck? (y/n): ").strip().lower()
-    if answer not in ("y", "yes"):  
-        print("Cancelled. Nothing was added or exported.")
-        raise SystemExit"""
 
     deck = genanki.Deck(random.randrange(1 << 30, 1 << 31), deck_name)#creates a new(same) deck, every time the script runs
-    for front_vocab, back_vocab in cards.items(): 
-        if front_vocab in seen_fronts: 
-            print(f"[{deck_name}] Skipped (duplicate): {front_vocab}") 
-            skipped_count += 1
-            continue 
-        morphology = back_vocab[2] #generate mophology for the back of the flashcard
+    for front_vocab, back_vocab in cards.items():
+        morphology = str(back_vocab[1: ])
         note = genanki.Note(model=word_model, fields=[front_vocab, back_vocab[0], morphology]) #builds flashcard data
         deck.add_note(note)
         seen_fronts.add(front_vocab) #prevents duplicates next time

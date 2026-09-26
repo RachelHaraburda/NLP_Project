@@ -5,7 +5,7 @@ from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
 from collections import Counter
-from functions import load_lang, find_pos, deepl_vocab_translation, build_cards, load_seen_fronts
+from functions import *
 
 textfile_on = input("\nWould you like to use a filepath (y/n)?:\n") #produces a boolean which is used later for sentences processing  
 if textfile_on.lower() == "y":
@@ -71,7 +71,6 @@ if textfile_on.lower() == "y":
         text = ""
         for page in reader.pages:
             text += page.extract_text() or ""
-        #text = page.extract_text()
         doc = nlp(text)
     else:
         raise ValueError("file format is not supported")
@@ -88,15 +87,22 @@ lemmas = []
 seen_fronts = load_seen_fronts()
 skip_counter = 0
 
+sentences = [sent.text for sent in doc.sents]
+
 for token in doc:
     if token.pos_ == pos:
         if not token.is_punct and not token.is_space and not token.is_digit: #filters out unwandted characters (!; .; \n; etc...)
             if token.lemma_ not in lemmas and token.lemma_ not in seen_fronts:
                 lemmas.append(token.lemma_)
+                ex_sen = []
+                for sentence in sentences:
+                    if str(token.text) in sentence:
+                        ex_sen.append(sentence)
+                s = random.choice(ex_sen)
                 if include_details.lower() == "y":
-                    wanted_words.append([token.lemma_, token.text, str(token.morph)])
+                    wanted_words.append([token.lemma_, token.text, s, str(token.morph)])
                 else:
-                    wanted_words.append([token.lemma_, token.text])
+                    wanted_words.append([token.lemma_, token.text, s])
             elif token.lemma_ in seen_fronts:
                 skip_counter += 1
 
@@ -116,20 +122,18 @@ else:
         vocab_list.append(word)
         
 
-#pull token.text for translation
-vocab = [item[1] for item in vocab_list] # sort out lemmas for translation
+#pull token.lemma_ for translation
+vocab = [item[0] for item in vocab_list]
 
-#pprint.pprint(vocab_list)
+pprint.pprint(vocab_list)
 
 if dpl.lower() == "n":
     print("\n",', '.join(map(str, vocab)))
-#test for inserting translations and converting to cards dictionary
     translations = input("\nPlease translate the tokens and paste them here:\n")
     if translations == "":
         quit()
     else:
         translations = list([x.strip() for x in translations.split(',')])
-    #print("\n",translations)
 else:
     translations = deepl_vocab_translation(auth, vocab, source, target)
 
