@@ -1,7 +1,5 @@
-import nltk, pprint, random, spacy, asyncio, subprocess, sys, os
+import pprint, random, spacy, sys, os
 from random import sample
-from spacy.matcher import Matcher
-from nltk.tokenize import word_tokenize
 from pypdf import PdfReader
 from pathlib import Path
 from collections import Counter
@@ -128,8 +126,9 @@ vocab = [item[0] for item in vocab_list]
 pprint.pprint(vocab_list)
 
 if dpl.lower() == "n":
+    print("Copy the following words and translate")
     print("\n",', '.join(map(str, vocab)))
-    translations = input("\nPlease translate the tokens and paste them here:\n")
+    translations = input("\nEnter translated words here:\n")
     if translations == "":
         quit()
     else:
@@ -146,7 +145,7 @@ for item in vocab_list:
 for item in vocab_list:
     cards.update({item[0] : item[1:]})
 
-deck_name = input("\nName your flashcard deck: ") # enter an exisiting deck to append new cards? #
+deck_name = input("\nName your flashcard deck: ") # enter an exisiting deck to append new cards
 if deck_name == "":
     deck_name == input("\nYou must name your deck or enter the name of an existing deck to continue:\n") 
     if deck_name == "":
