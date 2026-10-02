@@ -100,7 +100,6 @@ word_model = genanki.Model(
 def build_cards(cards, deck_name):# takes a dictionary and a string as arguments
     total_added = 0 
     seen_fronts = load_seen_fronts()
-    new_word_count = 0 # words are new, not yet in seen_fronts
 
     added_count = 0 
 
