@@ -84,6 +84,7 @@ cards = {} # dict of card with lemma as key, sentence where word appears in sour
 lemmas = []
 seen_fronts = load_seen_fronts()
 skip_counter = 0
+skipped = []
 
 sentences = [sent.text for sent in doc.sents]
 
@@ -102,7 +103,11 @@ for token in doc:
                 else:
                     wanted_words.append([token.lemma_, token.text, s])
             elif token.lemma_ in seen_fronts:
-                skip_counter += 1
+                if token.lemma_ in skipped:
+                    continue
+                else:
+                    skipped.append(token.lemma_)
+                    skip_counter += 1
 
 count = len(wanted_words)
 if count == 0:
