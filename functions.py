@@ -42,10 +42,6 @@ def find_pos(word_type):
         pos = "VERB"
     return pos
 
-
-def pull_sentence(source, token):
-    return(sentence + '.' for sentence in source.split('.') if token in sentence) # stackoverflow Python how to extract sentence containing a word
-
 #deepl implementation /// authentication key, has to be provided by the user
 def deepl_vocab_translation(key, vocab, source, target):
     source_code = langcodes.find(source)
